@@ -1,0 +1,70 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html>
+<head>
+
+    <title>Summary</title>
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}">
+
+</head>
+<body>
+
+<div class="sidebar">
+
+    <div class="logo">Groceries</div>
+
+    <a href="/">Dashboard</a>
+    <a href="/add/">Add Expense</a>
+
+</div>
+
+<div class="main">
+
+    <div class="summary-box">
+
+        <h1>Monthly Summary</h1>
+
+        <br><br>
+
+        <h2>Zumer Paid: £{{ zumer_total }}</h2>
+
+        <br>
+
+        <h2>Ali Paid: £{{ ali_total }}</h2>
+
+        <br>
+
+        <h2>Total Shared Expenses: £{{ total }}</h2>
+
+        <br>
+
+        <h2>Each Person Should Pay: £{{ split_amount }}</h2>
+
+        <br><br>
+
+        <div class="balance">
+
+            {% if zumer_balance > 0 %}
+
+                Ali owes Zumer £{{ zumer_balance }}
+
+            {% elif ali_balance > 0 %}
+
+                Zumer owes Ali £{{ ali_balance }}
+
+            {% else %}
+
+                Everything is balanced
+
+            {% endif %}
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+</html>

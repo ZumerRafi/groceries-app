@@ -1,0 +1,442 @@
+{% load static %}
+
+
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Groceries Dashboard</title>
+
+    <!-- PWA -->
+
+    <link rel="manifest" href="{% static 'manifest.json' %}">
+
+    <!-- CSS -->
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=10">
+
+    <!-- JS -->
+
+    <script src="{% static 'js/script.js' %}?v=10"></script>
+
+</head>
+
+<body>
+
+<!-- ALERTS -->
+
+<div class="alert-container">
+
+    {% for message in messages %}
+
+        <div class="alert alert-{{ message.tags }}">
+
+            {{ message }}
+
+        </div>
+
+    {% endfor %}
+
+</div>
+
+<!-- SIDEBAR -->
+
+<div class="sidebar">
+
+    <div class="logo">
+
+        Groceries
+
+    </div>
+
+    <a href="/">
+
+        Dashboard
+
+    </a>
+
+    <a href="/add/">
+
+        Add Expense
+
+    </a>
+
+    <a href="/summary/">
+
+        Summary
+
+    </a>
+
+    <a href="/pdf/">
+
+        Export PDF
+
+    </a>
+
+    <a href="/logout/">
+
+        Logout
+
+    </a>
+
+</div>
+
+<!-- MAIN -->
+
+<div class="main">
+
+    <!-- TOPBAR -->
+
+    <div class="topbar">
+
+        <h1>
+
+            Expense Dashboard
+
+        </h1>
+
+        <div
+            class="theme-toggle"
+            onclick="toggleTheme()"
+        >
+
+            <div class="theme-toggle-circle">
+
+                🌙
+        
+            </div>
+
+        </div>
+
+    </div>
+
+    <!-- STATS -->
+
+    <div class="stats">
+
+        <div class="stat-card">
+
+            <h2>Zumer Paid</h2>
+
+            <p>
+
+                £{{ zumer_total }}
+
+            </p>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h2>Ali Paid</h2>
+
+            <p>
+
+                £{{ ali_total }}
+
+            </p>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h2>Total Shared</h2>
+
+            <p>
+
+                £{{ total }}
+
+            </p>
+
+        </div>
+
+        <div class="stat-card">
+
+            <h2>Balance</h2>
+
+            <p style="font-size:18px; line-height:1.5;">
+
+                {% if zumer_balance > 0 %}
+
+                    Ali owes Zumer
+
+                    <br>
+
+                    £{{ zumer_balance }}
+
+                {% elif ali_balance > 0 %}
+
+                    Zumer owes Ali
+
+                    <br>
+
+                    £{{ ali_balance }}
+
+                {% else %}
+
+                    Everything Balanced
+
+                {% endif %}
+
+            </p>
+
+        </div>
+
+    </div>
+
+    <!-- EXPENSE CARDS -->
+
+    <div class="cards">
+
+        {% for expense in expenses %}
+
+        <div class="card">
+
+            <!-- IMAGE -->
+
+            <img
+                src="{{ expense.image.url }}"
+                onclick="openModal('{{ expense.image.url }}')"
+            >
+
+            <div class="card-content">
+
+                <!-- CARD HEADER -->
+
+                <div
+                    style="
+                    display:flex;
+                    justify-content:space-between;
+                    align-items:center;
+                    gap:10px;
+                    "
+                >
+
+                    <h2>
+
+                        {{ expense.user.username }}
+
+                    </h2>
+
+                    <span
+                        style="
+                        background:#38bdf8;
+                        color:white;
+                        padding:8px 14px;
+                        border-radius:30px;
+                        font-size:13px;
+                        font-weight:600;
+                        "
+                    >
+
+                        {{ expense.category }}
+
+                    </span>
+
+                </div>
+
+                <br>
+
+                <!-- AMOUNT -->
+
+                <div class="amount">
+
+                    £{{ expense.amount }}
+
+                </div>
+
+                <br>
+
+                <!-- DESCRIPTION -->
+
+                <p
+                    style="
+                    color:#cbd5e1;
+                    line-height:1.6;
+                    "
+                >
+
+                    {{ expense.description }}
+
+                </p>
+
+                <br>
+
+                <!-- DATE -->
+
+                <small
+                    style="
+                    color:#94a3b8;
+                    "
+                >
+
+                    {{ expense.created_at }}
+
+                </small>
+
+                <br><br>
+
+                <!-- ACTION BUTTONS -->
+
+                <div
+                    style="
+                    display:flex;
+                    gap:12px;
+                    "
+                >
+
+                    <!-- DELETE -->
+
+                    <a
+                        href="/delete/{{ expense.id }}/"
+
+                        onclick="return confirmDelete()"
+
+                        style="
+                        flex:1;
+                        text-align:center;
+                        background:#ef4444;
+                        color:white;
+                        padding:12px;
+                        border-radius:14px;
+                        text-decoration:none;
+                        font-weight:600;
+                        transition:0.3s;
+                        "
+                    >
+
+                        Delete
+
+                    </a>
+
+                </div>
+
+            </div>
+
+        </div>
+
+        {% empty %}
+
+        <!-- EMPTY STATE -->
+
+        <div
+            style="
+            background:rgba(255,255,255,0.05);
+            padding:40px;
+            border-radius:20px;
+            text-align:center;
+            width:100%;
+            "
+        >
+
+            <h2>
+
+                No Expenses Yet
+
+            </h2>
+
+            <br>
+
+            <p>
+
+                Add your first grocery expense.
+
+            </p>
+
+        </div>
+
+        {% endfor %}
+
+    </div>
+
+    <!-- CHART SECTION -->
+
+    <div
+        style="
+        background:rgba(255,255,255,0.05);
+        padding:30px;
+        border-radius:20px;
+        margin-top:40px;
+        "
+    >
+
+        <h2 style="margin-bottom:20px;">
+
+            Expense Comparison
+
+        </h2>
+
+        <canvas id="expenseChart"></canvas>
+
+    </div>
+
+</div>
+
+<!-- IMAGE MODAL -->
+
+<div id="modal" class="modal">
+
+    <span
+        class="close"
+        onclick="closeModal()"
+    >
+
+        &times;
+
+    </span>
+
+    <img
+        class="modal-content"
+        id="modal-img"
+    >
+
+</div>
+
+<!-- CHART.JS -->
+
+<script src="https://cdn.jsdelivr.net/npm/chart.js"></script>
+
+<script>
+
+const ctx = document.getElementById('expenseChart');
+
+new Chart(ctx, {
+
+    type: 'bar',
+
+    data: {
+
+        labels: ['Zumer', 'Ali'],
+
+        datasets: [{
+
+            label: 'Total Expenses',
+
+            data: [
+                {{ zumer_total }},
+                {{ ali_total }}
+            ],
+
+            borderWidth: 2
+
+        }]
+
+    },
+
+    options: {
+
+        responsive: true,
+
+    }
+
+});
+
+</script>
+
+</body>
+
+</html>

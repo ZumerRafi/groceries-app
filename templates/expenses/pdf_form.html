@@ -1,0 +1,165 @@
+{% load static %}
+
+<!DOCTYPE html>
+<html lang="en">
+
+<head>
+
+    <meta charset="UTF-8">
+
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+
+    <title>Generate Statement</title>
+
+    <link rel="stylesheet" href="{% static 'css/style.css' %}?v=10">
+
+</head>
+
+<body>
+
+<div class="main">
+
+    <div
+        class="form-box"
+
+        style="
+        max-width:700px;
+        margin:auto;
+        margin-top:60px;
+        "
+    >
+
+        <h1
+            style="
+            font-size:42px;
+            margin-bottom:10px;
+            "
+        >
+
+            Generate Statement PDF
+
+        </h1>
+
+        <p
+            style="
+            color:#94a3b8;
+            margin-bottom:40px;
+            "
+        >
+
+            Select a date range to export a professional expense report.
+
+        </p>
+
+        <form
+            method="GET"
+            action="/pdf/download/"
+        >
+
+            <div
+                style="
+                display:grid;
+                grid-template-columns:1fr 1fr;
+                gap:20px;
+                "
+            >
+
+                <div>
+
+                    <label>
+
+                        Start Date
+
+                    </label>
+
+                    <input
+                        type="date"
+                        name="start_date"
+                        required
+                    >
+
+                </div>
+
+                <div>
+
+                    <label>
+
+                        End Date
+
+                    </label>
+
+                    <input
+                        type="date"
+                        name="end_date"
+                        required
+                    >
+
+                </div>
+
+            </div>
+
+            <br><br>
+
+            <button
+                type="submit"
+
+                style="
+                width:100%;
+                padding:18px;
+                font-size:18px;
+                border-radius:16px;
+                "
+            >
+
+                Generate Professional PDF
+
+            </button>
+
+        </form>
+
+        <br><br>
+
+        <div
+            style="
+            background:rgba(255,255,255,0.05);
+            padding:20px;
+            border-radius:16px;
+            "
+        >
+
+            <h3>
+
+                PDF Includes
+
+            </h3>
+
+            <br>
+
+            <ul
+                style="
+                line-height:2;
+                color:#cbd5e1;
+                "
+            >
+
+                <li>Expense Summary</li>
+
+                <li>Total Spending</li>
+
+                <li>Date Range</li>
+
+                <li>Professional Tables</li>
+
+                <li>Zumer & Ali Breakdown</li>
+
+            </ul>
+
+        </div>
+
+    </div>
+
+</div>
+
+</body>
+
+</html>
