@@ -1,10 +1,13 @@
 from django.db import models
 from django.contrib.auth.models import User
+from django.utils import timezone
+from datetime import timedelta
 
 
 class Expense(models.Model):
 
     CATEGORY_CHOICES = [
+
         ('Groceries', 'Groceries'),
         ('Snacks', 'Snacks'),
         ('Cleaning', 'Cleaning'),
@@ -24,7 +27,7 @@ class Expense(models.Model):
 
     amount = models.DecimalField(
         max_digits=10,
-        decimal_places=2
+        decimal_places=3
     )
 
     description = models.CharField(
@@ -39,5 +42,12 @@ class Expense(models.Model):
         auto_now_add=True
     )
 
+    def is_expired(self):
+
+        return timezone.now() > (
+            self.created_at + timedelta(days=30)
+        )
+
     def __str__(self):
+
         return f"{self.user.username} - £{self.amount}"

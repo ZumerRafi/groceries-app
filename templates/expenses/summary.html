@@ -44,23 +44,33 @@
 
         <br><br>
 
-        <div class="balance">
+        {% if zumer_balance > 0 %}
 
-            {% if zumer_balance > 0 %}
+        <div class="balance-box balance-positive">
 
-                Ali owes Zumer £{{ zumer_balance }}
-
-            {% elif ali_balance > 0 %}
-
-                Zumer owes Ali £{{ ali_balance }}
-
-            {% else %}
-
-                Everything is balanced
-
-            {% endif %}
+            Ali needs to pay Zumer
+            £{{ zumer_balance|floatformat:3 }}
 
         </div>
+
+        {% elif ali_balance > 0 %}
+
+        <div class="balance-box balance-negative">
+
+            Zumer needs to pay Ali
+            £{{ ali_balance|floatformat:3 }}
+
+        </div>
+
+        {% else %}
+
+        <div class="balance-box balance-neutral">
+
+            Everything is balanced ✅
+
+        </div>
+
+{% endif %}
 
     </div>
 

@@ -1,4 +1,5 @@
 from decimal import Decimal
+from datetime import timedelta
 
 from django.shortcuts import render
 from django.shortcuts import redirect
@@ -15,6 +16,8 @@ from django.contrib.auth import logout
 from django.http import HttpResponse
 
 from django.utils.dateparse import parse_date
+from django.utils import timezone
+
 from django.contrib.auth.models import User
 
 from reportlab.platypus import (
@@ -39,7 +42,11 @@ from .forms import ExpenseForm
 @login_required
 def home(request):
 
-    expenses = Expense.objects.all().order_by('-created_at')
+    one_month_ago = timezone.now() - timedelta(days=30)
+
+    expenses = Expense.objects.filter(
+        created_at__gte=one_month_ago
+    ).order_by('-created_at')
 
     zumer_total = Decimal('0')
     ali_total = Decimal('0')
@@ -144,7 +151,11 @@ def delete_expense(request, expense_id):
 @login_required
 def summary(request):
 
-    expenses = Expense.objects.all()
+    one_month_ago = timezone.now() - timedelta(days=30)
+
+    expenses = Expense.objects.filter(
+        created_at__gte=one_month_ago
+    )
 
     zumer_total = Decimal('0')
     ali_total = Decimal('0')
@@ -231,6 +242,7 @@ def login_view(request):
         'expenses/login.html'
     )
 
+
 def signup_view(request):
 
     if request.method == 'POST':
@@ -284,6 +296,8 @@ def signup_view(request):
         request,
         'expenses/signup.html'
     )
+
+
 @login_required
 def logout_view(request):
 
@@ -322,45 +336,201 @@ def export_pdf(request):
     )
 
     response['Content-Disposition'] = (
-        'attachment; filename=\"statement.pdf\"'
+        'attachment; filename="Groceries_Statement.pdf"'
     )
 
     doc = SimpleDocTemplate(
         response,
-        pagesize=letter
+        pagesize=letter,
+        rightMargin=30,
+        leftMargin=30,
+        topMargin=30,
+        bottomMargin=20
     )
 
     styles = getSampleStyleSheet()
 
     elements = []
 
+    # =========================
+    # CALCULATIONS
+    # =========================
+
+    zumer_total = Decimal('0')
+    ali_total = Decimal('0')
+
+    for expense in expenses:
+
+        if expense.user.username == 'Zumer':
+
+            zumer_total += expense.amount
+
+        else:
+
+            ali_total += expense.amount
+
+    total = zumer_total + ali_total
+
+    split_amount = total / 2 if total > 0 else 0
+
+    zumer_balance = zumer_total - split_amount
+
+    ali_balance = ali_total - split_amount
+
+    # =========================
+    # TITLE
+    # =========================
+
     title = Paragraph(
-        'Groceries Expense Statement',
+        """
+        <font size=24 color="#0ea5e9">
+        <b>Groceries Expense Statement</b>
+        </font>
+        """,
         styles['Title']
     )
 
     elements.append(title)
 
-    elements.append(Spacer(1, 20))
+    elements.append(Spacer(1, 12))
+
+    # =========================
+    # DATE RANGE
+    # =========================
 
     subtitle = Paragraph(
-        f'Date Range: {start_date} to {end_date}',
-        styles['Heading2']
+        f"""
+        <font size=11>
+        Statement Period:
+        <b>{start_date}</b>
+        to
+        <b>{end_date}</b>
+        <br/><br/>
+        Generated on:
+        <b>{timezone.now().strftime('%d %B %Y')}</b>
+        </font>
+        """,
+        styles['Normal']
     )
 
     elements.append(subtitle)
 
     elements.append(Spacer(1, 20))
 
-    data = [
-        ['User', 'Category', 'Amount', 'Description', 'Date']
+    # =========================
+    # SUMMARY TABLE
+    # =========================
+
+    summary_data = [
+
+        ['Summary', 'Amount'],
+
+        ['Zumer Paid', f'£{zumer_total:.3f}'],
+
+        ['Ali Paid', f'£{ali_total:.3f}'],
+
+        ['Total Shared', f'£{total:.3f}'],
+
+        ['Each Person Share', f'£{split_amount:.3f}'],
+
     ]
 
-    total = 0
+    if zumer_balance > 0:
+
+        summary_data.append([
+            'Balance',
+            f'Ali owes Zumer £{zumer_balance:.3f}'
+        ])
+
+    elif ali_balance > 0:
+
+        summary_data.append([
+            'Balance',
+            f'Zumer owes Ali £{ali_balance:.3f}'
+        ])
+
+    else:
+
+        summary_data.append([
+            'Balance',
+            'Everything is balanced'
+        ])
+
+    summary_table = Table(
+        summary_data,
+        colWidths=[250, 220]
+    )
+
+    summary_table.setStyle(TableStyle([
+
+        ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0f172a')),
+
+        ('TEXTCOLOR', (0,0), (-1,0), colors.white),
+
+        ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
+
+        ('FONTSIZE', (0,0), (-1,0), 12),
+
+        ('BOTTOMPADDING', (0,0), (-1,0), 10),
+
+        ('BACKGROUND', (0,1), (-1,-1), colors.HexColor('#f8fafc')),
+
+        ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#cbd5e1')),
+
+        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+
+        ('FONTSIZE', (0,1), (-1,-1), 11),
+
+        ('BOTTOMPADDING', (0,1), (-1,-1), 8),
+
+        ('TOPPADDING', (0,1), (-1,-1), 8),
+
+    ]))
+
+    elements.append(summary_table)
+
+    elements.append(Spacer(1, 30))
+
+    # =========================
+    # EXPENSE TABLE TITLE
+    # =========================
+
+    expenses_title = Paragraph(
+        """
+        <font size=18 color="#0f172a">
+        <b>Expense Transactions</b>
+        </font>
+        """,
+        styles['Heading2']
+    )
+
+    elements.append(expenses_title)
+
+    elements.append(Spacer(1, 15))
+
+    # =========================
+    # TRANSACTION TABLE
+    # =========================
+
+    data = [[
+
+        'User',
+
+        'Category',
+
+        'Amount',
+
+        'Description',
+
+        'Date'
+
+    ]]
+
+    grand_total = Decimal('0')
 
     for expense in expenses:
 
-        total += float(expense.amount)
+        grand_total += expense.amount
 
         data.append([
 
@@ -382,7 +552,7 @@ def export_pdf(request):
 
         '',
 
-        f'Total: £{total:.3f}',
+        f'TOTAL: £{grand_total:.3f}',
 
         '',
 
@@ -390,25 +560,68 @@ def export_pdf(request):
 
     ])
 
-    table = Table(data)
+    table = Table(
+        data,
+        colWidths=[80, 100, 90, 150, 90]
+    )
 
     table.setStyle(TableStyle([
 
+        # HEADER
         ('BACKGROUND', (0,0), (-1,0), colors.HexColor('#0ea5e9')),
 
         ('TEXTCOLOR', (0,0), (-1,0), colors.white),
 
-        ('GRID', (0,0), (-1,-1), 1, colors.black),
-
         ('FONTNAME', (0,0), (-1,0), 'Helvetica-Bold'),
 
-        ('BOTTOMPADDING', (0,0), (-1,0), 12),
+        ('FONTSIZE', (0,0), (-1,0), 11),
 
-        ('BACKGROUND', (0,1), (-1,-1), colors.whitesmoke),
+        ('BOTTOMPADDING', (0,0), (-1,0), 10),
+
+        ('TOPPADDING', (0,0), (-1,0), 10),
+
+        # BODY
+        ('BACKGROUND', (0,1), (-1,-2), colors.white),
+
+        ('GRID', (0,0), (-1,-1), 1, colors.HexColor('#e2e8f0')),
+
+        ('FONTNAME', (0,1), (-1,-1), 'Helvetica'),
+
+        ('FONTSIZE', (0,1), (-1,-1), 10),
+
+        ('BOTTOMPADDING', (0,1), (-1,-1), 8),
+
+        ('TOPPADDING', (0,1), (-1,-1), 8),
+
+        # TOTAL ROW
+        ('BACKGROUND', (0,-1), (-1,-1), colors.HexColor('#0f172a')),
+
+        ('TEXTCOLOR', (0,-1), (-1,-1), colors.white),
+
+        ('FONTNAME', (0,-1), (-1,-1), 'Helvetica-Bold'),
 
     ]))
 
     elements.append(table)
+
+    elements.append(Spacer(1, 30))
+
+    # =========================
+    # FOOTER
+    # =========================
+
+    footer = Paragraph(
+        """
+        <font size=10 color="grey">
+        This statement was automatically generated by
+        <b>Groceries Expense Manager</b>.
+        <br/><br/>
+        Developed by <b>Zumer Rafi</b>
+        </font>
+        """,
+        styles['Normal']
+    )
+    elements.append(footer)
 
     doc.build(elements)
 
